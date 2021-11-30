@@ -1,25 +1,134 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client-js"
+}
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model User {
-  id        Int      @id @default(autoincrement())
-  uuid      String   @unique @default(uuid()) @db.Uuid
-  firstName String   @map("first_name")
-  lastName  String   @map("last_name")
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
+  id                Int                 @unique @id
+  email             String              @unique @db.VarChar
+  password          String              @db.VarChar
+  firstName         String              @map("first_name") @db.VarChar
+  lastName          String              @map("last_name") @db.VarChar
+  createdAt         DateTime            @default(now()) @map("created_at")
+  isPublicEmail     Boolean             @default(true) @map("is_public_email")
+  isVerified        Boolean             @default(false) @map("is_verified")
+  role              roleType           @default(user)
+  access_tokens     access_tokens?      @relation("access_tokensTousers")
+  comment_reactions CommentReaction[] @relation("comment_reactionsTousers")
+  comments          Comment[]          @relation("commentsTousers")
+  post_reactions    PostReaction[]    @relation("post_reactionsTousers")
+  posts             Post[]             @relation("postsTousers")
 
   @@map("users")
+}
+
+model access_tokens {
+  id         Int       @id
+  user_id    Int       @unique
+  token      String    @db.VarChar
+  email      String    @db.VarChar
+  created_at DateTime?
+  users      User      @relation("access_tokensTousers", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model CommentReaction {
+  id         Int       @unique  @id
+  userId     Int       @map("user_id")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  reaction   Boolean
+  commentId  Int       @unique  @map("comment_id")
+  comments   Comment   @relation(fields: [commentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users      User      @relation("comment_reactionsTousers", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("comment_reactions")
+}
+
+model Comment {
+  id                Int                @unique @id
+  userId            Int                @map("user_id")
+  content           String?            @db.VarChar
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @default(now()) @map("updated_at")
+  numLikes          Int                @default(0)  @map("num_likes")
+  numDislikes       Int                @default(0)  @map("num_dislikes")
+  postId            Int                             @map("post_id")
+  users             User               @relation("commentsTousers", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  comment_reactions CommentReaction?
+
+
+  @@map("comments")
+}
+
+model PostReaction {
+  id         Int      @unique  @id
+  userId     Int      @map("user_id") 
+  createdAt  DateTime @default(now())  @map("created_at")
+  reaction   Boolean
+  postId     Int      @unique  @map("postId")
+  posts      Post     @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reaction_per_post_post_id_fkey")
+  users      User     @relation("post_reactionsTousers", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reaction_per_post_user_id_fkey")
+  @@map("post_reactions")
+}
+
+model Post {
+  id            Int             @unique @id
+  userId        Int             @map("user_id")
+  content       String?         @db.VarChar
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @default(now()) @map("updated_at")
+  numLikes      Int             @default(0)     @map("num_likes")
+  numDislikes   Int             @default(0)     @map("num_dislikes")
+  isDraft       Boolean         @default(true)  @map("is_draft")
+  users         User            @relation("postsTousers", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  post_reactions PostReaction?
+
+  @@map("posts")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by the Prisma Client.
+model reactions {
+  id         Int
+  user_id    Int
+  created_at DateTime @default(now())
+  reaction   Boolean
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by the Prisma Client.
+model reports {
+  id          Int
+  resource    resourceType
+  resource_id String        @db.VarChar
+  created_at  DateTime?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by the Prisma Client.
+model resource {
+  id           Int
+  user_id      Int
+  content      String?  @db.VarChar
+  created_at   DateTime @default(now())
+  updated_at   DateTime @default(now())
+  num_likes    Int      @default(0)
+  num_dislikes Int      @default(0)
+
+  @@ignore
+}
+
+enum roleType {
+  user
+  moderator
+  admin
+}
+
+enum resourceType {
+  post
+  comment
 }
