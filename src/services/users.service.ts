@@ -17,16 +17,20 @@ export class UsersService {
     return prisma.user.create({ data: input })
   }
 
-  static async findOne(uuid: string): Promise<User> {
-    return prisma.user.findUnique({ where: { uuid } })
+  static async findOne(id: number): Promise<User> {
+    return prisma.user.findUnique({ where: { id } })
   }
 
-  static async update(uuid: string, input: UpdateUserDto): Promise<User> {
+  static async findOneByEmail(email: string): Promise<User> {
+    return prisma.user.findUnique({ where: { email } })
+  }
+
+  static async update(id: number, input: UpdateUserDto): Promise<User> {
     try {
       const user = await prisma.user.update({
         data: input,
         where: {
-          uuid,
+          id,
         },
       })
 
