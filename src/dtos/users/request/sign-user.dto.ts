@@ -9,21 +9,10 @@ import {
 import { BaseDto } from '../../base.dto'
 
 @Exclude()
-export class CreateUserDto extends BaseDto {
+export class SignUserDto extends BaseDto {
   @Expose()
-  @IsNotEmpty()
-  @IsNumber()
+  @IsEmail()
   readonly id: number
-
-  @Expose()
-  @IsNotEmpty()
-  @IsString()
-  readonly firstName: string
-
-  @Expose()
-  @IsNotEmpty()
-  @IsString()
-  readonly lastName: string
 
   @Expose()
   @IsEmail()

@@ -5,11 +5,12 @@ import {
   IsString,
   Length,
   IsNumber,
+  IsBoolean,
 } from 'class-validator'
-import { BaseDto } from '../../base.dto'
+import { BaseDto } from '../../../base.dto'
 
 @Exclude()
-export class CreateUserDto extends BaseDto {
+export class CreatePostReactionDto extends BaseDto {
   @Expose()
   @IsNotEmpty()
   @IsNumber()
@@ -17,20 +18,16 @@ export class CreateUserDto extends BaseDto {
 
   @Expose()
   @IsNotEmpty()
-  @IsString()
-  readonly firstName: string
+  @IsNumber()
+  readonly userId: number
 
   @Expose()
   @IsNotEmpty()
-  @IsString()
-  readonly lastName: string
+  @IsNumber()
+  readonly postId: number
 
   @Expose()
-  @IsEmail()
-  readonly email: string
-
-  @Expose()
-  @IsString()
-  @Length(6, 20)
-  readonly password: string
+  @IsNotEmpty()
+  @IsNumber()
+  readonly reaction: boolean
 }

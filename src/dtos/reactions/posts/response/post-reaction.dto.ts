@@ -1,18 +1,18 @@
 import { Exclude, Expose, Transform } from 'class-transformer'
 
 @Exclude()
-export class UserDto {
+export class PostReactionDto {
   @Expose()
   readonly id: number
 
   @Expose()
-  readonly firstName: string
+  readonly postId: number
 
   @Expose()
-  readonly lastName: string
+  readonly userId: number
 
   @Expose()
-  readonly email: string
+  readonly reaction: boolean
 
   @Expose()
   @Transform(({ value }) => value?.toISOString())
