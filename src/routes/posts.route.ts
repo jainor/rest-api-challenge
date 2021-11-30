@@ -1,14 +1,15 @@
 import express, { Router } from 'express'
 import asyncHandler from 'express-async-handler'
-//import { find, create, findOne, update } from '../controllers/users.controller'
-import { find, findOne, update } from '../controllers/users.controller'
+import { find, create, findOne, update } from '../controllers/posts.controller'
 import { authMiddleware } from '../middlewares/auth.middleware'
 
 const router = express.Router()
 
-export function usersRoutes(): Router {
-  router.route('/').get(asyncHandler(find))
-  //.post(asyncHandler(create))
+export function postsRoutes(): Router {
+  router
+    .route('/')
+    .get(asyncHandler(find))
+    .post(authMiddleware, asyncHandler(create))
   router
     .route('/:id')
     .get(asyncHandler(findOne))
