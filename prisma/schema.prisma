@@ -68,7 +68,7 @@ model PostReaction {
   userId     Int      @map("user_id") 
   createdAt  DateTime @default(now())  @map("created_at")
   reaction   Boolean
-  postId     Int      @unique  @map("postId")
+  postId     Int      @unique  @map("post_id")
   posts      Post     @relation(fields: [postId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reaction_per_post_post_id_fkey")
   users      User     @relation("post_reactionsTousers", fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "reaction_per_post_user_id_fkey")
   @@map("post_reactions")
