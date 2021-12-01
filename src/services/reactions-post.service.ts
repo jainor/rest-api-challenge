@@ -37,7 +37,7 @@ export class PostReactionsService {
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          throw new createError.UnprocessableEntity('email already taken')
+          throw new createError.UnprocessableEntity('id already taken')
         }
       }
 

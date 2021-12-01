@@ -63,6 +63,6 @@ app.get('/api/v1/status', (req: Request, res: Response) => {
 app.use('/api/v1/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument))
 
 app.use('/', router(app))
-//app.use(errorHandler)
+app.use(errorHandler)
 
 export { app }

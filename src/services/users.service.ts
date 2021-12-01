@@ -10,6 +10,8 @@ export class UsersService {
   }
 
   static async create(input: CreateUserDto): Promise<User> {
+    console.log(input.email + '<<<<')
+    console.log(input.id + '<<<<')
     if (await prisma.user.count({ where: { email: input.email } })) {
       throw new createError.UnprocessableEntity('email already taken')
     }

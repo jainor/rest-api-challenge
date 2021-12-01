@@ -10,7 +10,7 @@ import { authMiddleware } from '../middlewares/auth.middleware'
 
 const router = express.Router()
 
-export function usersRoutes(): Router {
+export function commentsRoutes(): Router {
   router.route('/').get(asyncHandler(find))
   router.route('/').post(authMiddleware, asyncHandler(create))
   router
