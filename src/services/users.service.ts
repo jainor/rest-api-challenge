@@ -2,7 +2,7 @@ import { Prisma, User } from '@prisma/client'
 import createError from 'http-errors'
 import { CreateUserDto } from '../dtos/users/request/create-user.dto'
 import { UpdateUserDto } from '../dtos/users/request/update-user.dto'
-import { prisma } from '../server'
+import { prisma } from '../app'
 
 export class UsersService {
   static async find(): Promise<User[]> {

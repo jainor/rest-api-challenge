@@ -2,7 +2,7 @@ import { Prisma, PostReaction } from '@prisma/client'
 import createError from 'http-errors'
 import { CreatePostReactionDto } from '../dtos/reactions/posts/request/create-post-reaction.dto'
 import { UpdatePostReactionDto } from '../dtos/reactions/posts/request/update-post-reaction.dto'
-import { prisma } from '../server'
+import { prisma } from '../app'
 
 export class PostReactionsService {
   static async find(): Promise<PostReaction[]> {

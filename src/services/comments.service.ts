@@ -2,7 +2,7 @@ import { Prisma, Comment } from '@prisma/client'
 import createError from 'http-errors'
 import { CreateCommentDto } from '../dtos/comments/request/create-comment.dto'
 import { UpdateCommentDto } from '../dtos/comments/request/update-comment.dto'
-import { prisma } from '../server'
+import { prisma } from '../app'
 
 export class CommentsService {
   static async find(): Promise<Comment[]> {

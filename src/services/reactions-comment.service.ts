@@ -2,7 +2,7 @@ import { Prisma, CommentReaction } from '@prisma/client'
 import createError from 'http-errors'
 import { CreateCommentReactionDto } from '../dtos/reactions/comments/request/create-comment-reaction.dto'
 import { UpdateCommentReactionDto } from '../dtos/reactions/comments/request/update-comment-reaction.dto'
-import { prisma } from '../server'
+import { prisma } from '../app'
 
 export class CommentReactionsService {
   static async find(): Promise<CommentReaction[]> {
