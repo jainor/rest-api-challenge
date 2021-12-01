@@ -8,7 +8,7 @@ export function authRoutes(): Router {
   router.route('/signin').post(asyncHandler(signin))
   router.route('/signup').post(asyncHandler(signup))
   router.route('/refresh').post(asyncHandler(protect))
-  router.route('/logout').post(logout)
+  router.route('/logout').post(asyncHandler(logout))
 
   //router.route('/:id').get(asyncHandler(findOne)).patch(asyncHandler(update))
 

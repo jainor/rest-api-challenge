@@ -6,6 +6,7 @@ import {
   findOne,
   update,
 } from '../controllers/reactions-comment.controller'
+import { authMiddleware } from '../middlewares/auth.middleware'
 
 const router = express.Router()
 
