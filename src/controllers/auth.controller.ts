@@ -1,10 +1,13 @@
 import { plainToClass } from 'class-transformer'
 import jwt from 'jsonwebtoken'
 import { Request, Response } from 'express'
+import bcrypt from 'bcrypt'
 import { UsersService } from '../services/users.service'
 import { UpdateUserDto } from '../dtos/users/request/update-user.dto'
 import { UserDto } from '../dtos/users/response/user.dto'
 import { CreateUserDto } from '../dtos/users/request/create-user.dto'
+
+import { hashPassword } from '../middlewares/util'
 
 export const JWT = process.env.JWT_SECRET || 'ANY SECRET'
 export const JWT_EXP = process.env.JWT_EXP || '100d'
@@ -27,7 +30,6 @@ export const signup = async (req: Request, res: Response) => {
   if (!req.body.email || !req.body.password) {
     return res.status(400).send({ message: 'need email and password' })
   }
-
   const dto = plainToClass(CreateUserDto, req.body)
   await dto.isValid()
 
@@ -43,8 +45,8 @@ export const signup = async (req: Request, res: Response) => {
   }
 }
 
-export const checkPassword = (currentValue: string, sendValue: string) => {
-  return currentValue === sendValue
+export const checkPassword = async (password: string, hashed: string) => {
+  return await bcrypt.compare(password, hashed as string)
 }
 
 export const signin = async (req: Request, res: Response) => {
@@ -61,7 +63,7 @@ export const signin = async (req: Request, res: Response) => {
       return res.status(401).send(invalid)
     }
 
-    const match: boolean = checkPassword(req.body.password, user.password)
+    const match: boolean = await checkPassword(req.body.password, user.password)
 
     if (!match) {
       return res.status(401).send(invalid)

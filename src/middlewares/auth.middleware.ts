@@ -19,7 +19,7 @@ export const authMiddleware = async (
       return res.status(401).end()
     }
     const user = await UsersService.findOne(payload.id)
-    const match: boolean = checkPassword(req.body.password, user.password)
+    const match: boolean = await checkPassword(req.body.password, user.password)
 
     if (!match) {
       return res.status(401).end('invalid user')
