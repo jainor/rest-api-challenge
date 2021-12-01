@@ -1,5 +1,4 @@
 import { plainToClass } from 'class-transformer'
-import { nextTick } from 'process'
 import jwt from 'jsonwebtoken'
 import { Request, Response } from 'express'
 import { UsersService } from '../services/users.service'
@@ -7,10 +6,10 @@ import { UpdateUserDto } from '../dtos/users/request/update-user.dto'
 import { UserDto } from '../dtos/users/response/user.dto'
 import { CreateUserDto } from '../dtos/users/request/create-user.dto'
 
-const JWT = process.env.JWT_SECRET || 'ANY SECRET'
-const JWT_EXP = process.env.JWT_EXP || '100d'
+export const JWT = process.env.JWT_SECRET || 'ANY SECRET'
+export const JWT_EXP = process.env.JWT_EXP || '100d'
 
-const newToken = (user: { id: number }) => {
+export const newToken = (user: { id: number }) => {
   return jwt.sign({ id: user.id }, JWT, {
     expiresIn: JWT_EXP,
   })

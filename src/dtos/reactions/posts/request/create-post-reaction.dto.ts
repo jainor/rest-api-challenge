@@ -28,6 +28,6 @@ export class CreatePostReactionDto extends BaseDto {
 
   @Expose()
   @IsNotEmpty()
-  @IsNumber()
+  @IsBoolean()
   readonly reaction: boolean
 }

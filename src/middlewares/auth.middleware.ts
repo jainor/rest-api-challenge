@@ -9,7 +9,6 @@ export const authMiddleware = async (
   res: Response,
   next: NextFunction,
 ) => {
-
   try {
     const bearer = req.headers.authorization
     const token = bearer?.split('Bearer ')[1].trim() || ''
