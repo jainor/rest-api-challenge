@@ -18,6 +18,6 @@ export class UpdateCommentReactionDto extends BaseDto {
 
   @Expose()
   @IsNotEmpty()
-  @IsString()
-  readonly content: string
+  @IsBoolean()
+  readonly reaction: boolean
 }

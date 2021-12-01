@@ -20,6 +20,6 @@ export class SignUserDto extends BaseDto {
 
   @Expose()
   @IsString()
-  @Length(6, 20)
+  @Length(6, 200)
   readonly password: string
 }
