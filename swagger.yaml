@@ -1,0 +1,1670 @@
+# A Swagger 3.0 (a.k.a. OpenAPI) definition of the Engine API.
+#
+# This is used for generating API documentation and the types used by the
+# client/server. See README files for more information.
+#
+# Some notes:
+# - We use this document to design a microblog REST API
+# - To accelerate this process, we use some .yaml references such as
+#   https://raw.githubusercontent.com/moby/moby/master/api/swagger.yaml.
+#   https://sheltered-oasis-97086.herokuapp.com/reference/#/Auth/AuthController_login
+
+
+openapi: 3.0.0
+info:
+  title: "Microblog API"
+  version: "0.01"
+  x-logo:
+    url: "https://c1.staticflickr.com/4/3184/4563990624_eda708f4f3.jpg"
+  description: |
+    Microblog API rest.
+
+    # Errors
+
+    The API uses standard HTTP status codes to indicate the success or failure
+    of the API call. The body of the response will be JSON in the following
+    format:
+
+    ```
+    {
+      "message": "page not found"
+    }
+    ```
+
+    # Versioning
+
+    The API is usually changed in each release, so API calls are versioned to
+    ensure that clients don't break. To lock to a specific version of the API,
+    you prefix the URL with its version, for example, call `api/v1/status` to use
+    the v1.10 version of the `/status` endpoint. If the API version specified in
+    the URL is not supported by the daemon, a HTTP `400 Bad Request` error message
+    is returned.
+
+    The API uses an open schema model, which means server may add extra properties
+    to responses. Likewise, the server will ignore any extra query parameters and
+    request body properties. 
+
+
+#    # Authentication
+#
+#    Authentication for registries is handled client side. The client has to send
+#    authentication details to various endpoints that need to communicate with
+#    registries, such as `POST /images/(name)/push`. These are sent as
+#    `X-Registry-Auth` header as a [base64url encoded](https://tools.ietf.org/html/rfc4648#section-5)
+#    (JSON) string with the following structure:
+#
+#    ```
+#    {
+#      "username": "string",
+#      "password": "string",
+#      "email": "string",
+#      "serveraddress": "string"
+#    }
+#    ```
+#
+#    The `serveraddress` is a domain/IP without a protocol. Throughout this
+#    structure, double quotes are required.
+#
+#    If you have already got an identity token from the [`/auth` endpoint](#operation/SystemAuth),
+#    you can just pass this instead of credentials:
+#
+#    ```
+#    {
+#      "identitytoken": "9cbaf023786cd7..."
+#    }
+#    ```
+#
+#basePath: "/localhost/"
+#
+#
+# The tags on paths define the menu sections in the ReDoc documentation, so
+# the usage of tags must make sense for that:
+# - They should be singular, not plural.
+# - There should not be too many tags, or the menu becomes unwieldy. For
+#   example, it is preferable to add a path to the "System" tag instead of
+#   creating a tag with a single path in it.
+# - The order of tags in this list defines the order in the menu.
+tags:
+  # Primary objects
+  - name: "Auth"
+    x-displayName: "Auth"
+    description: 
+      Create and manage users. 
+  - name: "Users"
+    x-displayName: "Users"
+    description: 
+      Manage a user.
+  - name: "Posts"
+    x-displayName: "Posts"
+  - name: "Comments"
+    x-displayName: "Comments"
+    #description: 
+    #  A post can have multiple comments.
+  - name: "Reactions"
+    x-displayName: "Reactions"
+  - name: "Reports"
+    x-displayName: "Reports [Pending]"
+    description: "Pending"
+    #description: |
+    #  A post can have multiple reactions.
+    #  A comment can have multile reactions.
+    #  A user can only have one of reaction for each comment or post.
+
+components:
+
+  securitySchemes:
+    BasicAuth:
+      type: http
+      scheme: basic
+    BearerAuth:
+      type: http
+      scheme: bearer
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    OpenID:
+      type: openIdConnect
+      openIdConnectUrl: https://example.com/.well-known/openid-configuration
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://example.com/oauth/authorize
+          tokenUrl: https://example.com/oauth/token
+          scopes:
+            read: Grants read access
+            write: Grants write access
+            admin: Grants access to admin operations
+            
+  schemas:
+    LoginDTO:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+        password:
+          type: "string"
+      required: 
+        - "email"
+        - "password"
+  
+    Login:
+      type: "object"
+      #description: "User login"
+      properties:
+        accessToken:
+          type: "string"
+        refreshToken:
+          type: "string"
+      required:
+        - "accessToken"
+        - "refreshToken"
+    
+  
+    RefreshTokenDto:
+      type: "object"
+      #description: "User login"
+      properties:
+        refreshToken:
+          type: "string"
+      required:
+        - "refreshToken"
+          
+  
+    SignUpDTO:
+      type: "object"
+      #description: "User login"
+      properties:
+        email:
+          type: "string"
+        password:
+          type: "string"
+          minLength: 8
+          maxLength: 128
+        passwordConfirmation:
+          type: "string"
+          minLength: 8
+          maxLength: 128
+        fullName:
+          type: "string"
+        isPublicName:
+          type: "boolean"
+        isPublicEmail:
+          type: "boolean"
+        #TODO email pattern
+      required: 
+        - "email"
+        - "password"
+        - "passwordConfirmation"
+        
+    UserDTO:
+      type: "object"
+      #description: "User login"
+      properties:
+        email:
+          type: "string"
+        password:
+          type: "string"
+        fullName:
+          type: "string"
+        isPublicName:
+          type: "boolean"
+        isPublicEmail:
+          type: "boolean"
+        #TODO email pattern
+      required: 
+        - "email"
+        - "password"
+        - "passwordConfirmation"
+
+    SuccessDeleteResponse:
+      type: "object"
+      #description: "User login"
+      properties:
+        message:
+          type: "string"
+        redirectLink:
+          type: "string"
+      required: 
+        - "message"
+        - "redirectLink"
+    
+    LogOut:
+      allOf:     # LogOut successully delete a sesion
+        - $ref: '#/components/schemas/SuccessDeleteResponse'
+        
+    RecoveryDTO:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+      required: 
+        - "email"
+
+    OAT:
+      type: "object"
+      properties:
+        token:
+          type: "string"
+      required: 
+        - "token"
+        
+    SendEmailRequest:  
+      description: "Represents a message status."
+      type: "object"
+      required: ["message"]
+      properties:
+        message:
+          description: "email message"
+          type: "string"
+          x-nullable: false
+      example:
+        message: "Email already sent!"
+  
+    User:
+      type: "object"
+      #description: "User"
+      properties:
+        id:
+          type: "number"
+        username:
+          type: "string"
+        fullName:
+          type: "string"
+        isPublicName:
+          type: "boolean"
+        email:
+          type: "string"
+        isPublicEmail:
+          type: "boolean"
+        isVerified:
+          type: "boolean"
+        isModerator:
+          type: "boolean"
+    PostDTO:
+      type: "object"
+      description: "Post"
+      properties:
+        PostId:
+          type: "string"
+        #UserId:
+        #  type: "string"
+        Content:
+          type: "string"
+        IsDraft:
+          type: "boolean"
+          
+          
+    Post:
+      type: "object"
+      description: "Post"
+      properties:
+        PostId:
+          type: "string"
+        #UserId:
+        #  type: "string"
+        Content:
+          type: "string"
+        IsDraft:
+          type: "boolean"
+        CreationDate:
+          type: "string"
+          format: "dateTime"
+          
+    CommentDTO:
+      type: "object"
+      description: "CommentDTO"
+      properties:
+        PostId:
+          type: "string"
+        #UserId:
+        #  type: "string"
+        Content:
+          type: "string"
+
+    Comment:
+      type: "object"
+      description: "Comment"
+      properties:
+        PostId:
+          type: "string"
+        UserId:
+          type: "string"
+        CreationDate:
+          type: "string"
+          format: "dateTime"
+  
+    ReactionPost:
+      type: "object"
+      description: "ReactionPost"
+      properties:
+        ReactionPostId:
+          type: "string"
+        PostId:
+          type: "string"
+        #UserId:
+        #  type: "string"
+        
+    ReactionComment:
+      type: "object"
+      description: "ReactionComment"
+      properties:
+        ReactionCommentId:
+          type: "string"
+        PostId:
+          type: "string"
+        #UserId:
+        #  type: "string"    
+        
+    BadRequestResponse:
+      description: "Represents a bad request messagge."
+      type: "object"
+      required: ["message"]
+      properties:
+        message:
+          type: "string"
+          x-nullable: false
+      example:
+        message: "Bad request."
+        
+    ErrorResponse:
+      description: "Represents an error."
+      type: "object"
+      required: ["message"]
+      properties:
+        message:
+          description: "The error message."
+          type: "string"
+          x-nullable: false
+      example:
+        message: "Something went wrong."
+      
+
+paths:
+  /auth/login:
+    post:
+      summary: "login"
+      description: "login"
+      operationId: "login"
+      #parameters:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginDTO"
+      responses:
+        '200':
+          description: "login"
+          content:
+            application/json:
+                schema:
+                  $ref: "#/components/schemas/Login"
+        '400':
+          description: "bad parameter"
+          content:
+            application/json:
+                schema:
+                  type: "array"
+                  items:
+                    $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Auth"]
+      
+  /auth/refresh:
+    post:
+      summary: "loginRefresh"
+      description: "loginRefresh"
+      operationId: "loginRefresh"
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenDto"
+      responses:
+        200:
+          description: "no error"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/Login"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Auth"]
+
+  /auth/signup:
+    post:
+      summary: "signUp"
+      description: "signUp"
+      operationId: "signUp"
+      #parameters:
+      requestBody:
+        #description: 
+        required: true
+        content:
+          application/json:
+            schema: 
+              $ref:  "#/components/schemas/SignUpDTO"
+      responses:
+        200:
+          description: "no error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Auth"]
+      
+  /auth/logout:
+    post:
+      summary: "logout"
+      description: "logout"
+      operationId: "logout"
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenDto"
+      responses:
+        200:
+          description: "OK"
+          content:
+            application/json:
+              schema: 
+                $ref: "#/components/schemas/LogOut"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Auth"]
+      
+  /users/me:
+    get:
+      summary: "meProfile"
+      description: "meProfile"
+      operationId: "meProfile"
+      security:
+        - OAuth2: [admin]   # Use OAuth with a different scope
+      parameters:
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Users"]
+    put:
+      summary: "updateUser"
+      description: "updateUser"
+      operationId: "updateUser"
+      #parameters:
+      security:
+        - OAuth2: [admin]   # Use OAuth with a different scope
+      requestBody:
+        #description: 
+        required: true
+        content:
+          application/json:
+            schema: 
+              $ref:  "#/components/schemas/UserDTO"
+      responses:
+        200:
+          description: "no error"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/User"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Users"]
+    patch:
+      summary: "patchUser"
+      description: "patchUser"
+      operationId: "patchUser"
+      #parameters:
+      security:
+        - OAuth2: [admin]   # Use OAuth with a different scope
+      requestBody:
+        #description: 
+        required: true
+        content:
+          application/json:
+            schema: 
+              $ref:  "#/components/schemas/UserDTO"
+      responses:
+        200:
+          description: "no error"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/User"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Users"]
+    delete:
+      summary: "deleteUser"
+      description: "deleteUser"
+      operationId: "deleteUser"
+      #parameters:
+      security:
+        - OAuth2: [admin]   # Use OAuth with a different scope
+      responses:
+        200:
+          description: "no error"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/SuccessDeleteResponse"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Users"]
+
+  /users/{userId}:
+     get:
+      summary: "userProfile"
+      description: "userProfile"
+      operationId: "userProfile"
+      parameters:
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Users"]
+
+  /users/{userId}/password/recovery:
+    post:
+      summary: "Send a link to recover Password"
+      description: "Send a link to recover Password"
+      operationId: "forgetPassword"
+      #parameters:
+      parameters:
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        #description: 
+        required: true
+        content:
+          application/json:
+            schema: 
+              $ref:  "#/components/schemas/RecoveryDTO"
+      responses:
+        201:
+          description: "Create email request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendEmailRequest"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequestResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Users"]
+
+  /users/{userId}/password:
+    put:
+      summary: "Update password with access token"
+      description: "Update password with access token"
+      operationId: "updatePasswordToken"
+      #parameters:
+      parameters:
+        - name: userId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int32
+      requestBody:
+        #description: 
+        required: true
+        content:
+          application/json:
+            schema: 
+              $ref:  "#/components/schemas/OAT"
+      responses:
+        201:
+          description: "Create email request"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequestResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Users"]
+      
+  /posts:
+    post:
+      summary: "createPost"
+      description: " createPost"
+      operationId: "createPost"      
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostDTO"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Posts"]
+    get:
+      summary: "readPosts"
+      description: "readPosts"
+      operationId: "readPosts"
+      #parameters:
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Post"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Posts"]
+      
+  /posts/{postId}:      
+    get:
+      summary: "readPost"
+      description: "readPost"
+      operationId: "readPost"
+      parameters:
+        - name: postId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Posts"]  
+      
+    patch:
+      summary: "updatePost"
+      description: "updatePost"
+      operationId: "updatePost"  
+      security:
+        - OAuth2: [admin] 
+      parameters:
+        - name: postId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int32
+      
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostDTO"
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Posts"]
+    delete:
+      summary: "deletePost"
+      description: "deletePost"
+      operationId: "deletePost"    
+      security:
+        - OAuth2: [admin] 
+      parameters:
+        - name: postId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessDeleteResponse"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Posts"]
+  
+  ###TODO add security
+  /posts/{postId}/comment:
+    post:
+      summary: "createComment"
+      description: "createComment"
+      operationId: "createComment"
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Comments"]
+
+  /posts/{postId}/comments:
+    get:
+      summary: "readComments"
+      description: "readComments"
+      operationId: "readComments"
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: User ID
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Comments"]
+
+  ###TODO add security
+  /posts/{postId}/comments/{commentId}:
+    get:
+      summary: "getComment"
+      description: "getComment"
+      operationId: "getComment"
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32        
+        - name: commentId
+          in: path
+          description: Comment ID
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Comments"]
+    patch:
+      summary: "updateComment"
+      description: "updateComment"
+      operationId: "updateComment"
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32        
+        - name: commentId
+          in: path
+          description: Comment ID
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Comments"]
+  
+    delete:
+      summary: "deleteComment"
+      description: "deleteComment"
+      operationId: "deleteComment"
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32        
+        - name: commentId
+          in: path
+          description: Comment ID
+          required: true
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessDeleteResponse"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Comments"]
+  /reactions:
+    get:    
+      summary: "ReactionsMe"
+      description: "ReactionsMe"
+      operationId: "ReactionsMe" 
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionPost"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reactions"]
+      
+  /posts/{postId}/reactions:
+    post:    
+      summary: "ReactionPost"
+      description: "ReactionPost"
+      operationId: "ReactionPost"
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32 
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionPost"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reactions"]
+    get:    
+      summary: "ReactionsPerPost"
+      description: "ReactionsPerPost"
+      operationId: "ReactionsPerPost"
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32 
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionPost"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reactions"]
+
+  /posts/{postId}/reactions/{ReactionId}:
+    get:    
+      summary: "ReactionsPerPost"
+      description: "ReactionsPerPost"
+      operationId: "ReactionsPerPost"
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32 
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionPost"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reactions"]
+    patch:
+      summary: "modifyReactionPost"
+      description: "modifyReactionPost"
+      operationId: "modifyReactionPost"
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32 
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionPost"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reactions"]
+    delete:
+      summary: "deleteReactionPost"
+      description: "deleteReactionPost"
+      operationId: "deleteReactionPost"
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32 
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessDeleteResponse"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionPost"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reactions"]
+   
+      
+  /posts/{postId}/comments/{commentId}/reactions:
+    post:
+      summary: "ReactionComment"
+      description: "ReactionComment"
+      operationId: "ReactionComment"
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32        
+        - name: commentId
+          in: path
+          description: Comment ID
+          required: true
+          schema:
+            type: integer
+            format: int32  
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionComment"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequestResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reactions"]
+    get:
+      summary: "ReactionsPerComment"
+      description: "ReactionsPerComment"
+      operationId: "ReactionsPerComment"
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32        
+        - name: commentId
+          in: path
+          description: Comment ID
+          required: true
+          schema:
+            type: integer
+            format: int32  
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionComment"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequestResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reactions"]
+  /posts/{postId}/comments/{commentId}/reactions/{reactionId}:
+    get:
+      summary: "ReactionsPerComment"
+      description: "ReactionsPerComment"
+      operationId: "ReactionsPerComment"
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32        
+        - name: commentId
+          in: path
+          description: Comment ID
+          required: true
+          schema:
+            type: integer
+            format: int32  
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionComment"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequestResponse"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reactions"]
+    patch:
+      summary: "modifyReactionComment"
+      description: "modifyReactionComment"
+      operationId: "modifyReactionComment"
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32        
+        - name: commentId
+          in: path
+          description: Comment ID
+          required: true
+          schema:
+            type: integer
+            format: int32  
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionComment"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequestResponse"
+        default:
+          description: "Unexpected error"    
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reactions"]
+    delete:
+      summary: "deleteReactionComment"
+      description: "deleteReactionComment"
+      operationId: "deleteReactionComment"
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      parameters:
+        - name: postId
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32        
+        - name: commentId
+          in: path
+          description: Comment ID
+          required: true
+          schema:
+            type: integer
+            format: int32  
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessDeleteResponse"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BadRequestResponse"
+        default:
+          description: "Unexpected error"    
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reactions"]
+  /reports/me:
+    get:    
+      summary: "ReportssMe"
+      description: "ReportssMe"
+      operationId: "ReportssMe" 
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionPost"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reports"]
+  /reports/{resource}/{resourceId}:
+    get:    
+      summary: "getReports"
+      description: "getReports"
+      operationId: "getReports" 
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      parameters:
+        - name: resource
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32        
+        - name: resourceId
+          in: path
+          description: Comment ID
+          required: true
+          schema:
+            type: integer
+            format: int32  
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionPost"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reports"] 
+    post:    
+      summary: "solveReports"
+      description: "solveReports"
+      operationId: "solveReports" 
+      security:
+        - OAuth2: [admin] 
+      #parameters:
+      parameters:
+        - name: resource
+          in: path
+          description: post ID
+          required: true
+          schema:
+            type: integer
+            format: int32        
+        - name: resourceId
+          in: path
+          description: Comment ID
+          required: true
+          schema:
+            type: integer
+            format: int32  
+      responses:
+        200:
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        400:
+          description: "bad parameter"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReactionPost"
+        default:
+          description: "Unexpected error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+      tags: ["Reports"]   
